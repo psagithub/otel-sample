@@ -1,0 +1,78 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.4.3'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.otel.sample'
+
+
+java {
+    toolchain {
+       languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+version = getEnv("VERSION", "0.0.1-SNAPSHOT")
+println("version: " + version)
+
+//versions
+def log4jVersion = "2.20.0"
+def disruptorVersion = "3.4.4"
+def jacksonVersion = "2.14.2"
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+	all*.exclude module: 'spring-boot-starter-logging'
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencyManagement {
+	imports {
+		mavenBom("io.opentelemetry:opentelemetry-bom:1.47.0")
+		mavenBom("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.13.3")
+	}
+}
+
+dependencies {
+	// disruptor for asynchronous log4j2 logging
+	implementation "com.lmax:disruptor:" + disruptorVersion
+	implementation 'com.google.googlejavaformat:google-java-format:1.25.2'
+	// log4j2
+	implementation "org.slf4j:slf4j-api:2.0.12"
+	implementation "org.apache.logging.log4j:log4j-api:" + log4jVersion
+	implementation "org.apache.logging.log4j:log4j-core:" + log4jVersion
+	implementation "org.apache.logging.log4j:log4j-layout-template-json:" + log4jVersion
+
+	implementation "org.springframework.boot:spring-boot-starter-actuator:3.4.2"
+
+	// springboot
+	annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+	implementation "org.springframework.boot:spring-boot-starter-webflux"
+
+	// opentelemetry
+	runtimeOnly("io.opentelemetry:opentelemetry-exporter-logging-otlp")
+	implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter")
+	implementation("io.opentelemetry.contrib:opentelemetry-samplers:1.44.0-alpha")
+	implementation("io.opentelemetry.instrumentation:opentelemetry-runtime-telemetry-java17:2.13.3-alpha")
+
+	// Jackson Json
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:' + jacksonVersion
+	implementation 'com.fasterxml.jackson.module:jackson-module-paranamer:' + jacksonVersion
+
+	implementation 'org.yaml:snakeyaml:2.4'
+}
+
+String getEnv(String envName, String defaultValue) {
+	String envValue = System.getenv(envName)
+	if (envValue == null || envValue.isEmpty() || envValue == "unspecified") {
+		return defaultValue
+	} else {
+		return envValue
+	}
+}
